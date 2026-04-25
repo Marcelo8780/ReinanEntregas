@@ -259,8 +259,22 @@
     atualizarPassos();
   }
 
-  document.getElementById('motorista').addEventListener('change', atualizarBotaoEnviar);
+  document.getElementById('motorista').addEventListener('change', () => {
+    const val = document.getElementById('motorista').value;
+    if (val) localStorage.setItem('ultimo_motorista', val);
+    atualizarBotaoEnviar();
+  });
   document.getElementById('numeroPV').addEventListener('input', atualizarBotaoEnviar);
+
+  // Restaura último motorista selecionado
+  const ultimoMotorista = localStorage.getItem('ultimo_motorista');
+  if (ultimoMotorista) {
+    const sel = document.getElementById('motorista');
+    if ([...sel.options].some(o => o.value === ultimoMotorista)) {
+      sel.value = ultimoMotorista;
+      atualizarBotaoEnviar();
+    }
+  }
 
   // ── Compressão — reduz tamanho e acelera envio ────────
   function comprimirImagem(base64, maxWidth = 1200, qualidade = 0.75) {
@@ -390,16 +404,30 @@
 
     const msg = `✅ ENTREGA CONFIRMADA\n📄 ${pv}\n🕐 Horário: ${horario}\n👷 Motorista: ${motorista}`;
 
-    // Envia tudo em paralelo — muito mais rápido que sequencial
-    await Promise.all([
-      enviarFotoTelegram(nota64, '📄 Nota fiscal\n' + msg),
-      ...fotos.map((f, i) => enviarFotoTelegram(f, `📦 Produto (${i+1}/${fotos.length}) — ${pv}`))
-    ]);
+    // 1º — Mensagem de texto (sempre chega primeiro)
+    await enviarMensagem(msg);
+
+    // 2º — Foto da nota fiscal
+    await enviarFotoTelegram(nota64, '📄 Nota fiscal — ' + pv);
+
+    // 3º — Fotos do produto agrupadas em álbum (sendMediaGroup)
+    if (fotos.length === 1) {
+      await enviarFotoTelegram(fotos[0], '📦 Produto — ' + pv);
+    } else if (fotos.length > 1) {
+      await enviarAlbumTelegram(fotos, '📦 Produto — ' + pv);
+    }
 
     if (!entrega) {
       setStatus('✅ Entrega confirmada e enviada com sucesso!', 'success');
       setTimeout(resetFormulario, 3000);
     }
+  }
+
+  async function enviarMensagem(texto) {
+    const form = new FormData();
+    form.append('chat_id', CHAT_ID);
+    form.append('text', texto);
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { method: 'POST', body: form });
   }
 
   async function enviarFotoTelegram(base64, legenda) {
@@ -409,6 +437,23 @@
     form.append('photo', blob, 'foto.jpg');
     form.append('caption', legenda);
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, { method: 'POST', body: form });
+  }
+
+  // Envia várias fotos como álbum agrupado (sendMediaGroup)
+  async function enviarAlbumTelegram(fotosB64, legenda) {
+    const form = new FormData();
+    form.append('chat_id', CHAT_ID);
+    const mediaJson = fotosB64.map((_, i) => ({
+      type: 'photo',
+      media: `attach://foto${i}`,
+      ...(i === 0 ? { caption: legenda } : {})
+    }));
+    form.append('media', JSON.stringify(mediaJson));
+    fotosB64.forEach((b64, i) => {
+      const blob = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: 'image/jpeg' });
+      form.append(`foto${i}`, blob, `foto${i}.jpg`);
+    });
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMediaGroup`, { method: 'POST', body: form });
   }
 
   // ── Pendentes ─────────────────────────────────────────
