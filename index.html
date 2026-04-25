@@ -165,8 +165,8 @@
   <div class="card">
     <p class="card-title">Passo 2 — Número da PV</p>
     <div class="field">
-      <label for="numeroPV">Número da PV (mínimo 6 dígitos)</label>
-      <input type="tel" id="numeroPV" placeholder="Ex: 123456" inputmode="numeric" pattern="[0-9]*" maxlength="20">
+      <label for="numeroPV">Número da PV (somente números)</label>
+      <input type="number" id="numeroPV" placeholder="Ex: 123456" inputmode="numeric">
     </div>
   </div>
 
@@ -256,22 +256,8 @@
 
   function atualizarBotaoEnviar() {
     const m  = document.getElementById('motorista').value;
-    const pvRaw = document.getElementById('numeroPV').value.trim();
-    const pvValida = /^[0-9]{6,}$/.test(pvRaw);
-    const pvEl = document.getElementById('numeroPV');
-    // Visual feedback on PV field
-    if (pvRaw.length > 0 && !pvValida) {
-      pvEl.style.borderColor = 'var(--error)';
-    } else if (pvValida) {
-      pvEl.style.borderColor = 'var(--success)';
-    } else {
-      pvEl.style.borderColor = '';
-    }
-    // Strip non-numeric chars on the fly
-    if (/[^0-9]/.test(pvRaw)) {
-      pvEl.value = pvRaw.replace(/[^0-9]/g, '');
-    }
-    const pronto = !!(m && pvValida && notaBase64 && produtosFotos.length > 0);
+    const pv = document.getElementById('numeroPV').value.trim();
+    const pronto = !!(m && pv && notaBase64 && produtosFotos.length > 0);
     const btn = document.getElementById('btnEnviar');
     btn.disabled = !pronto;
     btn.textContent = pronto && !estaOnline ? '💾 Salvar entrega (sem internet)' : 'Confirmar entrega ✓';
