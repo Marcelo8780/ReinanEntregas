@@ -245,6 +245,13 @@
   window.addEventListener('offline', atualizarConexao);
   atualizarConexao();
 
+  const pvInput = document.getElementById("pv");
+
+    // sempre que digitar, salva
+    pvInput.addEventListener("input", () => {
+      localStorage.setItem("pv_atual", pvInput.value);
+    });
+
   // ── Passos ────────────────────────────────────────────
   function atualizarPassos() {
     const m  = document.getElementById('motorista').value;
@@ -260,6 +267,11 @@
     const pv = document.getElementById('numeroPV').value.trim();
     const pronto = !!(m && pv && notaBase64 && produtosFotos.length > 0);
     const btn = document.getElementById('btnEnviar');
+    // limpa a PV salva
+    localStorage.removeItem("pv_atual");
+
+    // limpa o campo na tela
+    document.getElementById("pv").value = "";
     btn.disabled = !pronto;
     btn.textContent = pronto && !estaOnline ? '💾 Salvar entrega (sem internet)' : 'Confirmar entrega ✓';
     atualizarPassos();
@@ -271,6 +283,14 @@
     atualizarBotaoEnviar();
   });
   document.getElementById('numeroPV').addEventListener('input', atualizarBotaoEnviar);
+
+  window.addEventListener("load", () => {
+  const pvSalva = localStorage.getItem("pv_atual");
+
+  if (pvSalva) {
+    document.getElementById("pv").value = pvSalva;
+  }
+});
 
   // Restaura último motorista selecionado
   const ultimoMotorista = localStorage.getItem('ultimo_motorista');
