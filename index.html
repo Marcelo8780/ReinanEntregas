@@ -165,8 +165,8 @@
   <div class="card">
     <p class="card-title">Passo 2 — Número da PV</p>
     <div class="field">
-      <label for="numeroPV">Número da PV (somente números)</label>
-      <input type="number" id="numeroPV" placeholder="Ex: 123456" inputmode="numeric">
+      <label for="numeroPV">Número da PV (mínimo 6 dígitos)</label>
+      <input type="tel" id="numeroPV" placeholder="Ex: 123456" inputmode="numeric" pattern="[0-9]*" maxlength="20">
     </div>
   </div>
 
@@ -256,8 +256,22 @@
 
   function atualizarBotaoEnviar() {
     const m  = document.getElementById('motorista').value;
-    const pv = document.getElementById('numeroPV').value.trim();
-    const pronto = !!(m && pv && notaBase64 && produtosFotos.length > 0);
+    const pvRaw = document.getElementById('numeroPV').value.trim();
+    const pvValida = /^[0-9]{6,}$/.test(pvRaw);
+    const pvEl = document.getElementById('numeroPV');
+    // Visual feedback on PV field
+    if (pvRaw.length > 0 && !pvValida) {
+      pvEl.style.borderColor = 'var(--error)';
+    } else if (pvValida) {
+      pvEl.style.borderColor = 'var(--success)';
+    } else {
+      pvEl.style.borderColor = '';
+    }
+    // Strip non-numeric chars on the fly
+    if (/[^0-9]/.test(pvRaw)) {
+      pvEl.value = pvRaw.replace(/[^0-9]/g, '');
+    }
+    const pronto = !!(m && pvValida && notaBase64 && produtosFotos.length > 0);
     const btn = document.getElementById('btnEnviar');
     btn.disabled = !pronto;
     btn.textContent = pronto && !estaOnline ? '💾 Salvar entrega (sem internet)' : 'Confirmar entrega ✓';
@@ -424,6 +438,7 @@
 
     if (!entrega) {
       setStatus('✅ Entrega confirmada e enviada com sucesso!', 'success');
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
       setTimeout(resetFormulario, 3000);
     }
   }
@@ -538,6 +553,19 @@
     atualizarBotaoEnviar();
   }
 
+  // Limpeza automática: remove entregas já enviadas com mais de 7 dias
+  function limparPendentesAntigos() {
+    const sete_dias = 7 * 24 * 60 * 60 * 1000;
+    const agora = Date.now();
+    let pendentes = JSON.parse(localStorage.getItem('entregas_pendentes') || '[]');
+    const antes = pendentes.length;
+    pendentes = pendentes.filter(e => !e.enviado || (agora - e.id) < sete_dias);
+    if (pendentes.length !== antes) {
+      localStorage.setItem('entregas_pendentes', JSON.stringify(pendentes));
+    }
+  }
+
+  limparPendentesAntigos();
   verificarPendentes();
 </script>
 </body>
