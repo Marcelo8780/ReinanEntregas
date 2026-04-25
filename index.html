@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>Entregas — Reinan Variedades</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f3ef;
+      --surface: #ffffff;
+      --border: #e0ddd8;
+      --text: #1a1a18;
+      --muted: #7a7870;
+      --accent: #1a1a18;
+      --success-bg: #eaf3de;
+      --success: #3b6d11;
+      --error-bg: #fcebeb;
+      --error: #a32d2d;
+      --info-bg: #e6f1fb;
+      --info: #185fa5;
+      --warn-bg: #faeeda;
+      --warn: #854f0b;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+    body { font-family: 'Georgia', serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 0 4rem; }
+
+    .header { background: var(--accent); color: #fff; text-align: center; padding: 2rem 1.5rem 1.5rem; }
+    .header .logo { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.55; margin-bottom: 8px; }
+    .header h1 { font-size: 24px; font-weight: normal; letter-spacing: -0.5px; }
+    .header p { font-size: 13px; opacity: 0.6; margin-top: 4px; font-family: sans-serif; }
+
+    .net-badge { font-family: sans-serif; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; margin-top: 10px; display: inline-block; }
+    .net-badge.online { background: #c0dd97; color: #27500a; }
+    .net-badge.offline { background: #f7c1c1; color: #791f1f; }
+
+    .pendentes-bar { background: var(--warn-bg); border-bottom: 1px solid #fac775; padding: 10px 1rem; font-family: sans-serif; font-size: 13px; color: var(--warn); display: none; align-items: center; justify-content: space-between; gap: 8px; }
+    .pendentes-bar.show { display: flex; }
+    .btn-enviar-pendentes { background: var(--warn); color: #fff; border: none; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-family: sans-serif; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+    .wrap { max-width: 480px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+    .steps { display: flex; gap: 6px; margin-bottom: 1.5rem; padding: 0 0.5rem; }
+    .step { flex: 1; height: 4px; background: var(--border); border-radius: 999px; transition: background 0.3s; }
+    .step.done { background: var(--accent); }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+    .card-title { font-family: sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+
+    label { font-family: sans-serif; font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+    .field { margin-bottom: 1rem; }
+    select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 16px; font-family: sans-serif; background: var(--bg); color: var(--text); appearance: none; -webkit-appearance: none; }
+
+    .photo-area { border: 2px dashed var(--border); border-radius: var(--radius-sm); padding: 2rem 1rem; text-align: center; cursor: pointer; background: var(--bg); -webkit-tap-highlight-color: transparent; }
+    .photo-area:active { background: #eceae5; border-color: var(--accent); }
+    .photo-area input { display: none; }
+    .photo-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+    .photo-area strong { font-family: sans-serif; font-size: 15px; font-weight: 600; display: block; }
+    .photo-area span { font-family: sans-serif; font-size: 12px; color: var(--muted); display: block; margin-top: 4px; }
+    .photo-preview { width: 100%; border-radius: var(--radius-sm); margin-top: 12px; display: none; max-height: 280px; object-fit: cover; }
+    .foto-ok { font-family: sans-serif; font-size: 13px; color: var(--success); font-weight: 600; margin-top: 8px; display: none; text-align: center; }
+
+    .btn-ler { width: 100%; margin-top: 10px; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: sans-serif; font-size: 14px; color: var(--text); cursor: pointer; }
+    .btn-ler:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-ler.offline-mode { border-color: var(--warn); color: var(--warn); }
+
+    .btn-enviar { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-family: sans-serif; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 0.5rem; transition: opacity 0.15s, transform 0.1s; }
+    .btn-enviar:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-enviar:not(:disabled):active { transform: scale(0.98); }
+
+    .result-box { background: var(--bg); border-radius: var(--radius-sm); padding: 1rem; margin-top: 1rem; display: none; }
+    .result-box .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-family: sans-serif; }
+    .result-box .row:last-child { border: none; }
+    .result-box .k { font-size: 12px; color: var(--muted); white-space: nowrap; padding-top: 1px; }
+    .result-box .v { font-size: 13px; font-weight: 600; text-align: right; }
+    .pv-badge { display: inline-block; background: var(--accent); color: #fff; font-family: sans-serif; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: 1px; }
+
+    .status { padding: 14px 16px; border-radius: var(--radius-sm); font-family: sans-serif; font-size: 14px; margin-top: 1rem; display: none; line-height: 1.5; }
+    .status.loading { background: var(--info-bg); color: var(--info); display: block; }
+    .status.success { background: var(--success-bg); color: var(--success); display: block; font-weight: 600; }
+    .status.error { background: var(--error-bg); color: var(--error); display: block; }
+    .status.warn { background: var(--warn-bg); color: var(--warn); display: block; }
+
+    .lista-pendentes { margin-top: 1.5rem; }
+    .lista-pendentes h3 { font-family: sans-serif; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
+    .item-pendente { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; font-family: sans-serif; font-size: 13px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .item-pendente .info strong { display: block; font-size: 14px; }
+    .item-pendente .info span { color: var(--muted); font-size: 12px; }
+    .item-pendente .tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); white-space: nowrap; }
+    .item-pendente .tag.enviado { background: var(--success-bg); color: var(--success); }
+
+    .footer { text-align: center; font-family: sans-serif; font-size: 11px; color: var(--muted); margin-top: 2rem; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Reinan Variedades</div>
+  <h1>Confirmar Entrega</h1>
+  <p>Preencha os passos abaixo após cada entrega</p>
+  <span class="net-badge" id="netBadge">Verificando...</span>
+</div>
+
+<div class="pendentes-bar" id="pendentesBar">
+  <span id="pendentesMsg">📦 Entregas aguardando envio</span>
+  <button class="btn-enviar-pendentes" onclick="enviarPendentes()">Enviar agora</button>
+</div>
+
+<div class="wrap">
+
+  <div class="steps">
+    <div class="step" id="s1"></div>
+    <div class="step" id="s2"></div>
+    <div class="step" id="s3"></div>
+    <div class="step" id="s4"></div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Passo 1 — Quem está entregando?</p>
+    <div class="field">
+      <label for="motorista">Seu nome</label>
+      <select id="motorista">
+        <option value="">Toque aqui e escolha seu nome</option>
+        <!-- =============================================
+             LISTA DE MOTORISTAS
+             Para adicionar: copie uma linha abaixo e troque o nome
+             Para remover: apague a linha do motorista
+             ============================================= -->
+        <option value="Osimar">Osimar</option>
+        <option value="Eduardo">Eduardo</option>
+        <option value="Vinicius">Vinicius</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Passo 2 — Foto da nota fiscal</p>
+    <div class="photo-area" onclick="document.getElementById('fotoNota').click()">
+      <span class="photo-icon">📄</span>
+      <strong>Fotografar a nota</strong>
+      <span>Aponte a câmera para a nota fiscal e tire a foto</span>
+      <input type="file" id="fotoNota" accept="image/*" capture="environment">
+      <img id="previewNota" class="photo-preview" alt="Foto da nota">
+    </div>
+    <div class="foto-ok" id="okNota">✔ Foto da nota adicionada</div>
+    <button class="btn-ler" id="btnLerNota" disabled onclick="lerNota()">
+      🔍 Ler número da PV automaticamente
+    </button>
+    <div id="resultBox" class="result-box">
+      <div class="row"><span class="k">Nº PV</span><span class="v"><span class="pv-badge" id="rPV">-</span></span></div>
+      <div class="row"><span class="k">Cliente</span><span class="v" id="rCliente">-</span></div>
+      <div class="row"><span class="k">Valor total</span><span class="v" id="rValor">-</span></div>
+      <div class="row"><span class="k">Endereço</span><span class="v" id="rEndereco">-</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Passo 3 — Foto do produto entregue</p>
+    <div class="photo-area" onclick="document.getElementById('fotoProduto').click()">
+      <span class="photo-icon">📦</span>
+      <strong>Fotografar o produto</strong>
+      <span>Tire uma foto mostrando o material que foi entregue</span>
+      <input type="file" id="fotoProduto" accept="image/*" capture="environment">
+      <img id="previewProduto" class="photo-preview" alt="Foto do produto">
+    </div>
+    <div class="foto-ok" id="okProduto">✔ Foto do produto adicionada</div>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <button class="btn-enviar" id="btnEnviar" disabled onclick="salvarOuEnviar()">
+    Confirmar entrega ✓
+  </button>
+
+  <div class="lista-pendentes" id="listaPendentes" style="display:none">
+    <h3>Entregas salvas no celular</h3>
+    <div id="itensPendentes"></div>
+  </div>
+
+  <div class="footer">Reinan Variedades · Sistema de entregas</div>
+</div>
+
+<script>
+  const TELEGRAM_TOKEN = '8733363727:AAGo3_iQHSck9lpJUEmiZyWxIDBJ7FjMcgs';
+  const CHAT_ID = '-5060424478';
+
+  let dadosNota = {}, notaBase64 = '', produtoBase64 = '', estaOnline = navigator.onLine;
+
+  function atualizarConexao() {
+    estaOnline = navigator.onLine;
+    const badge = document.getElementById('netBadge');
+    const btnLer = document.getElementById('btnLerNota');
+    if (estaOnline) {
+      badge.textContent = '● Online';
+      badge.className = 'net-badge online';
+      btnLer.textContent = '🔍 Ler número da PV automaticamente';
+      btnLer.classList.remove('offline-mode');
+      verificarPendentes();
+    } else {
+      badge.textContent = '● Sem internet';
+      badge.className = 'net-badge offline';
+      if (notaBase64) {
+        btnLer.textContent = '✏️ Sem internet — digitar PV manualmente';
+        btnLer.classList.add('offline-mode');
+      }
+    }
+    atualizarBotaoEnviar();
+  }
+
+  window.addEventListener('online', () => { atualizarConexao(); enviarPendentesAutomatico(); });
+  window.addEventListener('offline', atualizarConexao);
+  atualizarConexao();
+
+  function atualizarPassos() {
+    const m = document.getElementById('motorista').value;
+    document.getElementById('s1').classList.toggle('done', !!m);
+    document.getElementById('s2').classList.toggle('done', !!notaBase64);
+    document.getElementById('s3').classList.toggle('done', !!dadosNota.pv);
+    document.getElementById('s4').classList.toggle('done', !!produtoBase64);
+  }
+
+  function atualizarBotaoEnviar() {
+    const m = document.getElementById('motorista').value;
+    const pronto = !!(m && notaBase64 && produtoBase64 && dadosNota.pv);
+    const btn = document.getElementById('btnEnviar');
+    btn.disabled = !pronto;
+    btn.textContent = pronto && !estaOnline ? '💾 Salvar entrega (sem internet)' : 'Confirmar entrega ✓';
+    atualizarPassos();
+  }
+
+  document.getElementById('motorista').addEventListener('change', atualizarBotaoEnviar);
+
+  function setupFoto(inputId, previewId, okId, onLoad) {
+    document.getElementById(inputId).addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById(previewId).src = e.target.result;
+        document.getElementById(previewId).style.display = 'block';
+        document.getElementById(okId).style.display = 'block';
+        onLoad(e.target.result.split(',')[1]);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  setupFoto('fotoNota', 'previewNota', 'okNota', b64 => {
+    notaBase64 = b64;
+    const btn = document.getElementById('btnLerNota');
+    btn.disabled = false;
+    if (!estaOnline) { btn.textContent = '✏️ Sem internet — digitar PV manualmente'; btn.classList.add('offline-mode'); }
+    atualizarPassos();
+  });
+
+  setupFoto('fotoProduto', 'previewProduto', 'okProduto', b64 => { produtoBase64 = b64; atualizarBotaoEnviar(); });
+
+  async function lerNota() {
+    if (!estaOnline) { pedirPVManual(); return; }
+    setStatus('Lendo a nota fiscal... aguarde alguns segundos.', 'loading');
+    document.getElementById('btnLerNota').disabled = true;
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: notaBase64 } },
+            { type: 'text', text: 'Leia esta nota fiscal e extraia: numero da PV (formato PV XXXXXX), nome do cliente, valor total, endereço de entrega. Responda SOMENTE em JSON puro sem markdown: {"pv":"","cliente":"","valor":"","endereco":""}' }
+          ]}]
+        })
+      });
+      const data = await resp.json();
+      const text = data.content.find(b => b.type === 'text')?.text || '';
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+      preencherDados(parsed);
+      setStatus('✔ Nota lida! Confira os dados e tire a foto do produto.', 'success');
+    } catch (e) {
+      setStatus('Não foi possível ler a nota. Tente novamente.', 'error');
+      document.getElementById('btnLerNota').disabled = false;
+    }
+  }
+
+  function pedirPVManual() {
+    const pv = prompt('Digite o número da PV que aparece na nota (só os números):');
+    if (!pv) return;
+    const cliente = prompt('Nome do cliente (pode deixar vazio):') || '';
+    const valor = prompt('Valor total (pode deixar vazio):') || '';
+    preencherDados({ pv: 'PV ' + pv.trim(), cliente, valor, endereco: '' });
+    setStatus('✔ Dados inseridos. Tire a foto do produto.', 'success');
+  }
+
+  function preencherDados(parsed) {
+    dadosNota = parsed;
+    document.getElementById('rPV').textContent = parsed.pv || '-';
+    document.getElementById('rCliente').textContent = parsed.cliente || '-';
+    document.getElementById('rValor').textContent = parsed.valor || '-';
+    document.getElementById('rEndereco').textContent = parsed.endereco || '-';
+    document.getElementById('resultBox').style.display = 'block';
+    atualizarBotaoEnviar();
+  }
+
+  function setStatus(msg, tipo) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + tipo;
+  }
+
+  async function salvarOuEnviar() {
+    estaOnline ? await enviarAgora() : salvarOffline();
+  }
+
+  function salvarOffline() {
+    const motorista = document.getElementById('motorista').value;
+    const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const pendentes = JSON.parse(localStorage.getItem('entregas_pendentes') || '[]');
+    pendentes.push({ id: Date.now(), motorista, horario: agora, dados: dadosNota, notaBase64, produtoBase64, enviado: false });
+    localStorage.setItem('entregas_pendentes', JSON.stringify(pendentes));
+    setStatus('💾 Entrega salva! Será enviada automaticamente quando a internet voltar.', 'warn');
+    renderizarPendentes();
+    resetFormulario();
+  }
+
+  async function enviarAgora(entrega) {
+    const motorista = entrega ? entrega.motorista : document.getElementById('motorista').value;
+    const dados = entrega ? entrega.dados : dadosNota;
+    const nota64 = entrega ? entrega.notaBase64 : notaBase64;
+    const prod64 = entrega ? entrega.produtoBase64 : produtoBase64;
+    const horario = entrega ? entrega.horario : new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    if (!entrega) { document.getElementById('btnEnviar').disabled = true; setStatus('Enviando para o Telegram...', 'loading'); }
+
+    const msg = `✅ ENTREGA CONFIRMADA\n📄 PV: ${dados.pv}\n👤 Cliente: ${dados.cliente}\n💰 Valor: ${dados.valor}\n📍 Endereço: ${dados.endereco}\n🕐 Horário: ${horario}\n👷 Motorista: ${motorista}`;
+    await enviarFotoTelegram(nota64, '📄 Nota fiscal\n' + msg);
+    await enviarFotoTelegram(prod64, '📦 Foto do produto — ' + dados.pv);
+
+    if (!entrega) { setStatus('✅ Entrega confirmada e enviada com sucesso!', 'success'); setTimeout(resetFormulario, 4000); }
+  }
+
+  async function enviarFotoTelegram(base64, legenda) {
+    const blob = await (await fetch('data:image/jpeg;base64,' + base64)).blob();
+    const form = new FormData();
+    form.append('chat_id', CHAT_ID);
+    form.append('photo', blob, 'foto.jpg');
+    form.append('caption', legenda);
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, { method: 'POST', body: form });
+  }
+
+  function verificarPendentes() {
+    const pendentes = JSON.parse(localStorage.getItem('entregas_pendentes') || '[]');
+    const naoEnviados = pendentes.filter(e => !e.enviado);
+    const bar = document.getElementById('pendentesBar');
+    if (naoEnviados.length > 0) {
+      bar.classList.add('show');
+      document.getElementById('pendentesMsg').textContent = `📦 ${naoEnviados.length} entrega(s) aguardando envio`;
+    } else {
+      bar.classList.remove('show');
+    }
+    renderizarPendentes();
+  }
+
+  function renderizarPendentes() {
+    const pendentes = JSON.parse(localStorage.getItem('entregas_pendentes') || '[]');
+    if (pendentes.length === 0) { document.getElementById('listaPendentes').style.display = 'none'; return; }
+    document.getElementById('listaPendentes').style.display = 'block';
+    const container = document.getElementById('itensPendentes');
+    container.innerHTML = '';
+    pendentes.slice().reverse().forEach(e => {
+      const div = document.createElement('div');
+      div.className = 'item-pendente';
+      div.innerHTML = `<div class="info"><strong>${e.dados.pv || 'PV não lida'}</strong><span>${e.motorista} · ${e.horario} · ${e.dados.cliente || ''}</span></div><span class="tag ${e.enviado ? 'enviado' : ''}">${e.enviado ? '✔ Enviado' : 'Pendente'}</span>`;
+      container.appendChild(div);
+    });
+  }
+
+  async function enviarPendentes() {
+    if (!estaOnline) { setStatus('Sem internet. Aguarde a conexão voltar.', 'error'); return; }
+    const pendentes = JSON.parse(localStorage.getItem('entregas_pendentes') || '[]');
+    const naoEnviados = pendentes.filter(e => !e.enviado);
+    if (!naoEnviados.length) return;
+    setStatus(`Enviando ${naoEnviados.length} entrega(s) salvas...`, 'loading');
+    let ok = 0;
+    for (const e of naoEnviados) { try { await enviarAgora(e); e.enviado = true; ok++; } catch (_) {} }
+    localStorage.setItem('entregas_pendentes', JSON.stringify(pendentes));
+    setStatus(`✅ ${ok} entrega(s) enviadas com sucesso!`, 'success');
+    verificarPendentes();
+  }
+
+  async function enviarPendentesAutomatico() {
+    const pendentes = JSON.parse(localStorage.getItem('entregas_pendentes') || '[]');
+    const naoEnviados = pendentes.filter(e => !e.enviado);
+    if (!naoEnviados.length) return;
+    setStatus(`📡 Internet voltou! Enviando ${naoEnviados.length} entrega(s) salvas...`, 'loading');
+    for (const e of naoEnviados) { try { await enviarAgora(e); e.enviado = true; } catch (_) {} }
+    localStorage.setItem('entregas_pendentes', JSON.stringify(pendentes));
+    setStatus('✅ Entregas pendentes enviadas automaticamente!', 'success');
+    verificarPendentes();
+  }
+
+  function resetFormulario() {
+    dadosNota = {}; notaBase64 = ''; produtoBase64 = '';
+    ['previewNota','previewProduto'].forEach(id => document.getElementById(id).style.display = 'none');
+    ['okNota','okProduto'].forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById('resultBox').style.display = 'none';
+    ['fotoNota','fotoProduto'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('motorista').value = '';
+    document.getElementById('btnLerNota').disabled = true;
+    document.getElementById('btnLerNota').classList.remove('offline-mode');
+    document.getElementById('btnLerNota').textContent = '🔍 Ler número da PV automaticamente';
+    document.getElementById('status').className = 'status';
+    atualizarBotaoEnviar();
+  }
+
+  verificarPendentes();
+</script>
+</body>
+</html>
